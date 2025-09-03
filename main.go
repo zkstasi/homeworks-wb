@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 )
 
 func main() {
@@ -31,5 +34,10 @@ func main() {
 		return // Завершаем выполнение main(), так как введено неправильное значение
 	}
 
-	Channels(N) // вызываем функцию из L1.3.go
+	//создание контекста, который отменится, когда пользователь нажмет Ctrl+C или придет другой сигнал завершения
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop() // освобождаем ресурсы
+
+	Channels(N, ctx) // вызываем функцию из L1.3.go
+
 }
