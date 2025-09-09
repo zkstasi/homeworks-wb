@@ -1,7 +1,7 @@
 package main
 
 import (
-	"context"
+	"fmt"
 	"time"
 )
 
@@ -37,25 +37,49 @@ func main() {
 		Channels(N, ctx) // вызываем функцию из L1.3.go
 	*/
 
-	// время работы программы
-	N := 3
+	/*
+		// время работы программы
+		N := 3
 
-	// контекст с таймаутом N секунд
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(N)*time.Second)
-	defer cancel()
+		// контекст с таймаутом N секунд
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(N)*time.Second)
+		defer cancel()
 
-	// создаём канал для передачи данных
-	ch := make(chan int)
+		// создаём канал для передачи данных
+		ch := make(chan int)
 
-	// запускаем горутину-отправителя
-	go Sender(ctx, ch)
+		// запускаем горутину-отправителя
+		go Sender(ctx, ch)
 
-	// запускаем горутину-получателя
-	go Receiver(ctx, ch)
+		// запускаем горутину-получателя
+		go Receiver(ctx, ch)
 
-	// ждём завершения контекста
-	<-ctx.Done()
+		// ждём завершения контекста
+		<-ctx.Done()
 
-	// закрываем канал (сигнализируем получателю, что данных больше не будет)
-	close(ch)
+		// закрываем канал (сигнализируем получателю, что данных больше не будет)
+		close(ch)
+	*/
+
+	fmt.Println("Остановка по условию")
+	stopByCondition()       // вызов функции
+	time.Sleep(time.Second) // ждем, чтобы горутина успела завершится
+
+	fmt.Println("Остановка через канал уведомления")
+	stopByChannel()         // вызов функции
+	time.Sleep(time.Second) // ждем, чтобы горутина успела завершится
+
+	fmt.Println("Остановка через контекст")
+	stopByContext()         // вызов функции
+	time.Sleep(time.Second) // ждем, чтобы горутина успела завершится
+
+	fmt.Println("Остановка через runtime.Goexit()")
+	stopByGoexit()          // вызов функции
+	time.Sleep(time.Second) // ждем, чтобы горутина успела завершится
+
+	fmt.Println("Остановка через закрытие канала")
+	stopByCloseChannel()    // вызов функции
+	time.Sleep(time.Second) // ждем, чтобы горутина успела завершится
+
+	fmt.Println("\nВсе демонстрации завершены.")
 }
