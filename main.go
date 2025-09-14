@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
+	"sync"
 	"time"
 )
 
@@ -61,25 +63,63 @@ func main() {
 		close(ch)
 	*/
 
-	fmt.Println("Остановка по условию")
-	stopByCondition()       // вызов функции
-	time.Sleep(time.Second) // ждем, чтобы горутина успела завершится
+	/*
+		fmt.Println("Остановка по условию")
+		stopByCondition()       // вызов функции
+		time.Sleep(time.Second) // ждем, чтобы горутина успела завершится
 
-	fmt.Println("Остановка через канал уведомления")
-	stopByChannel()         // вызов функции
-	time.Sleep(time.Second) // ждем, чтобы горутина успела завершится
+		fmt.Println("Остановка через канал уведомления")
+		stopByChannel()         // вызов функции
+		time.Sleep(time.Second) // ждем, чтобы горутина успела завершится
 
-	fmt.Println("Остановка через контекст")
-	stopByContext()         // вызов функции
-	time.Sleep(time.Second) // ждем, чтобы горутина успела завершится
+		fmt.Println("Остановка через контекст")
+		stopByContext()         // вызов функции
+		time.Sleep(time.Second) // ждем, чтобы горутина успела завершится
 
-	fmt.Println("Остановка через runtime.Goexit()")
-	stopByGoexit()          // вызов функции
-	time.Sleep(time.Second) // ждем, чтобы горутина успела завершится
+		fmt.Println("Остановка через runtime.Goexit()")
+		stopByGoexit()          // вызов функции
+		time.Sleep(time.Second) // ждем, чтобы горутина успела завершится
 
-	fmt.Println("Остановка через закрытие канала")
-	stopByCloseChannel()    // вызов функции
-	time.Sleep(time.Second) // ждем, чтобы горутина успела завершится
+		fmt.Println("Остановка через закрытие канала")
+		stopByCloseChannel()    // вызов функции
+		time.Sleep(time.Second) // ждем, чтобы горутина успела завершится
 
-	fmt.Println("\nВсе демонстрации завершены.")
+		fmt.Println("\nВсе демонстрации завершены.")
+	*/
+
+	rand.Seed(time.Now().UnixNano()) // инициализируем генератор случайных чисел текущим временем
+
+	sm := NewSafeMap()    // создаём наш безопасный map
+	var wg sync.WaitGroup // создаём группу ожидания для горутин
+
+	// запускаем несколько горутин-писателей
+	for i := 0; i < 3; i++ { // будет 3 горутины
+		wg.Add(1)         // увеличиваем счётчик ожидаемых горутин
+		go func(id int) { // анонимная функция, которая запускается как горутина
+			defer wg.Done()           // по завершению уменьшаем счётчик
+			for j := 0; j < 10; j++ { // пишем 10 значений
+				key := fmt.Sprintf("key-%d-%d", id, j) // формируем ключ
+				sm.Set(key, j)                         // кладём значение
+				time.Sleep(time.Millisecond * 10)      // маленькая задержка, чтобы имитировать работу
+			}
+		}(i) // передаём номер горутины в функцию
+	}
+
+	// запускаем несколько горутин-читателей
+	for i := 0; i < 3; i++ { // будет 3 горутины
+		wg.Add(1) // увеличиваем счётчик
+		go func(id int) {
+			defer wg.Done()           // уменьшаем по завершению
+			for j := 0; j < 10; j++ { // 10 попыток чтения
+				key := fmt.Sprintf("key-%d-%d", rand.Intn(3), rand.Intn(10)) // случайный ключ
+				if val, ok := sm.Get(key); ok {                              // пробуем прочитать
+					fmt.Printf("Reader %d: key=%s val=%d\n", id, key, val) // если есть — выводим
+				}
+				time.Sleep(time.Millisecond * 10) // небольшая задержка
+			}
+		}(i)
+	}
+
+	wg.Wait()                       // ждём, пока все горутины закончат
+	fmt.Println("Работа завершена") // выводим сообщение
 }
